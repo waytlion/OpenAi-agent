@@ -30,10 +30,15 @@ def get_project_root() -> Path:
 PROJECT_ROOT = get_project_root()
 WORKSPACE_ROOT = PROJECT_ROOT / "workspace"
 
-BASE_URL = os.getenv("EXAMPLE_BASE_URL") or "http://localhost:11434/v1"
-API_KEY = os.getenv("EXAMPLE_API_KEY") or "ollama"
-MODEL_NAME = os.getenv("EXAMPLE_MODEL_NAME") or "gemma3:1b"
+#! Das hier ist Ollama
+#BASE_URL = os.getenv("EXAMPLE_BASE_URL") or "http://localhost:11434/v1"
+#API_KEY = os.getenv("EXAMPLE_API_KEY") or "ollama"
+#MODEL_NAME = os.getenv("EXAMPLE_MODEL_NAME") or "gemma3:1b"
 
+#! Das hier ist LittleLLM
+BASE_URL = os.getenv("EXAMPLE_BASE_URL") or "http://188.245.32.59:4000"
+API_KEY = os.getenv("EXAMPLE_API_KEY") or "sk-6uV8zFo9OcPqgMD5R4Bb3g"
+MODEL_NAME = os.getenv("EXAMPLE_MODEL_NAME") or "gpt-4o"
 
 client = AsyncOpenAI(
     base_url=BASE_URL,
@@ -46,34 +51,109 @@ set_tracing_disabled(disabled=True)
 API_URL = "http://localhost:8081/task/index/"  # API endpoint for SWE-Bench-Lite
 LOG_FILE = "results.log"
 
-
-
 def on_rm_error(func, path, exc_info):
     # Change the file to be writable and try again
     os.chmod(path, stat.S_IWRITE)
     func(path)
 
 async def handle_task(index):
+    # Track file reads to prevent infinite loops
+    file_read_count = {}
+    max_reads_per_file = 3
 
     @function_tool
     def read_file(file_path: str) -> str:
         """Read the contents of a file."""
+        # Remove any leading repo_X/ prefix if present
+        if file_path.startswith(f"repo_{index}/"):
+            file_path = file_path[len(f"repo_{index}/"):]
+
+        # Circuit breaker - prevent excessive reads of same file
+        if file_path in file_read_count:
+            file_read_count[file_path] += 1
+            if file_read_count[file_path] > max_reads_per_file:
+                return f"Error: File {file_path} has been read {max_reads_per_file} times already. Refusing to read again to prevent infinite loops."
+        else:
+            file_read_count[file_path] = 1
+
         full_path = os.path.join(repo_dir, file_path)
-        print(f"DEBUG: Attempting to read file: {full_path}")  
-        with open(full_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        print(f"DEBUG: Successfully read {len(content)} characters")  
-        return content
+        print(f"DEBUG: Attempting to read file: {full_path} (read #{file_read_count[file_path]})")
+
+        # Check if file exists before trying to read
+        if not os.path.exists(full_path):
+            return f"Error: File {file_path} does not exist"
+
+        try:
+            with open(full_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            print(f"DEBUG: Successfully read {len(content)} characters")
+            return content
+        except UnicodeDecodeError:
+            return f"Error: File {file_path} appears to be a binary file and cannot be read as text"
+        except Exception as e:
+            return f"Error reading file {file_path}: {str(e)}"
 
     @function_tool
     def write_file(file_path: str, content: str) -> str:
         """Write content to a file."""
+        # Remove any leading repo_X/ prefix if present
+        if file_path.startswith(f"repo_{index}/"):
+            file_path = file_path[len(f"repo_{index}/"):]
+
         full_path = os.path.join(repo_dir, file_path)
-        os.makedirs(os.path.dirname(full_path), exist_ok=True)
-        with open(full_path, 'w', encoding='utf-8') as f:
-            f.write(content)
-        return f"File {file_path} written successfully"
-    
+        try:
+            os.makedirs(os.path.dirname(full_path), exist_ok=True)
+            with open(full_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            print(f"WRITE: Agent wrote {len(content)} characters to {file_path}")
+            return f"File {file_path} written successfully"
+        except Exception as e:
+            print(f"ERROR: Failed to write {file_path}: {str(e)}")
+            return f"Error writing file {file_path}: {str(e)}"
+
+    @function_tool
+    def list_files(directory_path: str = ".") -> str:
+        """List files and directories in the given path."""
+        if directory_path.startswith(f"repo_{index}/"):
+            directory_path = directory_path[len(f"repo_{index}/"):]
+
+        full_path = os.path.join(repo_dir, directory_path)
+
+        if not os.path.exists(full_path):
+            return f"Error: Directory {directory_path} does not exist"
+
+        try:
+            items = []
+            for item in sorted(os.listdir(full_path)):
+                item_path = os.path.join(full_path, item)
+                if os.path.isdir(item_path):
+                    items.append(f"📁 {item}/")
+                else:
+                    items.append(f"📄 {item}")
+            return "\n".join(items)
+        except Exception as e:
+            return f"Error listing directory {directory_path}: {str(e)}"
+
+    @function_tool
+    def run_specific_tests(test_paths: str) -> str:
+        """Run specific tests to see their output."""
+        try:
+            result = subprocess.run(
+                ["python", "-m", "pytest", "-xvs"] + test_paths.split(),
+                cwd=repo_dir,
+                capture_output=True,
+                text=True,
+                timeout=120
+            )
+            output = f"Exit code: {result.returncode}\n"
+            if result.stdout:
+                output += f"STDOUT:\n{result.stdout}\n"
+            if result.stderr:
+                output += f"STDERR:\n{result.stderr}\n"
+            return output
+        except Exception as e:
+            return f"Error running tests: {str(e)}"
+
     api_url = f"{API_URL}{index}"
     print(f"Fetching test case {index} from {api_url}...")
     repo_dir = os.path.join(WORKSPACE_ROOT,"repos", f"repo_{index}")
@@ -121,16 +201,26 @@ async def handle_task(index):
             f"Problem description:\n"
             f"{prompt}\n\n"
             f"Make sure the fix is minimal and only touches what's necessary to resolve the failing tests."
+            f"Work efficiently and avoid unnecessary file operations."
         )
         print(f"Launching agent (OpenAI)...")
-        instructions = "you're a coding assistant. You can inspect source files, modify code, and fix failing tests. Use the provided tools to read/write files and run tests."
+        instructions = (
+            "You are a bug-fixing specialist. Follow this workflow:\n\n"
+            "1. Use list_files() to explore the repository structure\n"
+            "2. Run the failing tests first using run_specific_tests() to understand the error\n"
+            "3. Read the relevant source files mentioned in the problem\n"
+            "4. Identify the exact bug causing the test failures\n"
+            "5. Write the minimal fix using write_file()\n"
+            "6. Run the tests again to verify the fix works\n\n"
+            "Focus on understanding WHY the tests are failing before making changes."
+        )
         agent = Agent(
             name="Agent",
             instructions=instructions,
             model=MODEL_NAME,
-            #tools=[read_file, write_file] 
+            tools=[read_file, write_file, list_files, run_specific_tests],
         )
-        result = await Runner.run(agent, full_prompt)
+        result = await Runner.run(agent, full_prompt, max_turns=20)
         print("Agent final output:", result.final_output)
 
         # Token usage
@@ -222,8 +312,7 @@ def extract_last_token_total_from_logs():
 
 
 async def main():
-    for i in range(1, 2):
+    for i in range(1, 3):
         await handle_task(i)
-
 if __name__ == "__main__":
     asyncio.run(main())
