@@ -12,6 +12,7 @@ import subprocess
 import re
 import shutil
 import stat
+import sys
 
 from agents import (
     Agent,
@@ -138,8 +139,10 @@ async def handle_task(index):
     def run_specific_tests(test_paths: str) -> str:
         """Run specific tests to see their output."""
         try:
+            # Use the Python executable from the current virtual environment
+            python_executable = sys.executable  # This points to the current venv's Python
             result = subprocess.run(
-                ["python", "-m", "pytest", "-xvs"] + test_paths.split(),
+                [python_executable, "-m", "pytest", "-xvs"] + test_paths.split(),
                 cwd=repo_dir,
                 capture_output=True,
                 text=True,
@@ -206,13 +209,12 @@ async def handle_task(index):
         print(f"Launching agent (OpenAI)...")
         instructions = (
             "You are a bug-fixing specialist. Follow this workflow:\n\n"
-            "1. Use list_files() to explore the repository structure\n"
-            "2. Run the failing tests first using run_specific_tests() to understand the error\n"
-            "3. Read the relevant source files mentioned in the problem\n"
-            "4. Identify the exact bug causing the test failures\n"
-            "5. Write the minimal fix using write_file()\n"
-            "6. Run the tests again to verify the fix works\n\n"
-            "Focus on understanding WHY the tests are failing before making changes."
+            "1. Use list_files() to explore the repository structure.\n"
+            "2. Read the relevant source files mentioned in the problem.\n"
+            "3. Analyze the code to identify the bug.\n"
+            "4. Write the minimal fix using write_file().\n"
+            "5. Do not spend more than 2 turns analyzing the problem before making a change.\n\n"
+            "IMPORTANT: Always make a code change, even if you cannot validate it with tests."
         )
         agent = Agent(
             name="Agent",
@@ -220,11 +222,9 @@ async def handle_task(index):
             model=MODEL_NAME,
             tools=[read_file, write_file, list_files, run_specific_tests],
         )
-        result = await Runner.run(agent, full_prompt, max_turns=20)
+        result = await Runner.run(agent, full_prompt, max_turns = 5)
         print("Agent final output:", result.final_output)
-
-        # Token usage
-        token_total = extract_last_token_total_from_logs()
+        print(result)
 
         # Check for changes in the repository BEFORE calling REST service
         print("Checking for changes in the repository...")
@@ -291,28 +291,9 @@ async def handle_task(index):
         print(f"Error in test case {index}: {e}")
 
 
-def extract_last_token_total_from_logs():
-    log_dir = r"logs"
-    log_files = [f for f in os.listdir(log_dir) if f.endswith(".log")]
-    if not log_files:
-        return "No logs found"
-
-    log_files.sort(reverse=True)
-
-    latest_log_path = os.path.join(log_dir, log_files[0])
-    with open(latest_log_path, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-
-    for line in reversed(lines):
-        match = re.search(r'Cumulative Total=(\d+)', line)
-        if match:
-            return int(match.group(1))
-
-    return "Cumulative Total not found"
-
-
 async def main():
-    for i in range(1, 3):
+    for i in range(20, 31):
         await handle_task(i)
 if __name__ == "__main__":
+    print(f"DEBUG: Using Python executable: {sys.executable}")
     asyncio.run(main())
