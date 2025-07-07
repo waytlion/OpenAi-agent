@@ -36,7 +36,7 @@ WORKSPACE_ROOT = PROJECT_ROOT / "workspace"
 #API_KEY = os.getenv("EXAMPLE_API_KEY") or "ollama"
 #MODEL_NAME = os.getenv("EXAMPLE_MODEL_NAME") or "gemma3:1b"
 
-#! Das hier ist LittleLLM
+#! Das hier ist LiteLLM
 BASE_URL = os.getenv("EXAMPLE_BASE_URL") or "http://188.245.32.59:4000"
 API_KEY = os.getenv("EXAMPLE_API_KEY") or "sk-6uV8zFo9OcPqgMD5R4Bb3g"
 MODEL_NAME = os.getenv("EXAMPLE_MODEL_NAME") or "gpt-4o"
@@ -128,9 +128,9 @@ async def handle_task(index):
             for item in sorted(os.listdir(full_path)):
                 item_path = os.path.join(full_path, item)
                 if os.path.isdir(item_path):
-                    items.append(f"📁 {item}/")
+                    items.append(f" {item}/")
                 else:
-                    items.append(f"📄 {item}")
+                    items.append(f" {item}")
             return "\n".join(items)
         except Exception as e:
             return f"Error listing directory {directory_path}: {str(e)}"
@@ -222,7 +222,7 @@ async def handle_task(index):
             model=MODEL_NAME,
             tools=[read_file, write_file, list_files, run_specific_tests],
         )
-        result = await Runner.run(agent, full_prompt, max_turns = 5)
+        result = await Runner.run(agent, full_prompt, max_turns = 25)
         print("Agent final output:", result.final_output)
         print(result)
 
@@ -280,7 +280,6 @@ async def handle_task(index):
             log.write(f"\n--- TESTCASE {index} ---\n")
             log.write(f"FAIL_TO_PASS passed: {fail_pass_passed}/{fail_pass_total}\n")
             log.write(f"PASS_TO_PASS passed: {pass_pass_passed}/{pass_pass_total}\n")
-            log.write(f"Total Tokens Used: {token_total}\n")
         print(f"Test case {index} completed and logged.")
 
     except Exception as e:
