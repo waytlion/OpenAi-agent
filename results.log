@@ -10,103 +10,75 @@ Error: Max turns (10) exceeded
 FAIL_TO_PASS passed: 0/1
 PASS_TO_PASS passed: 8/8
 
+
+
 --- TESTCASE 4 ---
-Error: Max turns (10) exceeded
+FAIL_TO_PASS passed: 1/1
+PASS_TO_PASS passed: 179/179
 
 --- TESTCASE 5 ---
-Error: Max turns (10) exceeded
+FAIL_TO_PASS passed: 0/2
+PASS_TO_PASS passed: 11/11
 
 --- TESTCASE 6 ---
-No changes detected in the repository. Skipping evaluation.
+Error: No data in harnessOutput – possible evaluation error or empty result
 
 --- TESTCASE 7 ---
-Error: Max turns (10) exceeded
+FAIL_TO_PASS passed: 0/1
+PASS_TO_PASS passed: 98/98
 
 --- TESTCASE 8 ---
-Error: Max turns (10) exceeded
+FAIL_TO_PASS passed: 0/1
+PASS_TO_PASS passed: 0/1
 
 --- TESTCASE 9 ---
-Error: Max turns (10) exceeded
+FAIL_TO_PASS passed: 0/2
+PASS_TO_PASS passed: 0/118
 
 --- TESTCASE 10 ---
 FAIL_TO_PASS passed: 0/16
-PASS_TO_PASS passed: 0/58
+PASS_TO_PASS passed: 19/58
 
 --- TESTCASE 11 ---
-Error: Max turns (10) exceeded
+FAIL_TO_PASS passed: 0/1
+PASS_TO_PASS passed: 88/88
 
 --- TESTCASE 12 ---
-Error: Max turns (10) exceeded
+Error: No data in harnessOutput – possible evaluation error or empty result
 
 --- TESTCASE 13 ---
-Error: Max turns (10) exceeded
+FAIL_TO_PASS passed: 3/3
+PASS_TO_PASS passed: 19/19
 
 --- TESTCASE 14 ---
-Error: Max turns (10) exceeded
+FAIL_TO_PASS passed: 0/1
+PASS_TO_PASS passed: 0/64
 
 --- TESTCASE 15 ---
-Error: Max turns (10) exceeded
+FAIL_TO_PASS passed: 1/1
+PASS_TO_PASS passed: 40/40
 
 --- TESTCASE 16 ---
-Error: Max turns (10) exceeded
+FAIL_TO_PASS passed: 0/1
+PASS_TO_PASS passed: 8/8
 
 --- TESTCASE 17 ---
-FAIL_TO_PASS passed: 0/1
-PASS_TO_PASS passed: 0/46
+Error: No data in harnessOutput – possible evaluation error or empty result
 
 --- TESTCASE 18 ---
-Error: Max turns (10) exceeded
+FAIL_TO_PASS passed: 0/2
+PASS_TO_PASS passed: 174/174
 
 --- TESTCASE 19 ---
 FAIL_TO_PASS passed: 2/2
 PASS_TO_PASS passed: 50/50
 
 --- TESTCASE 20 ---
-Error: Max turns (10) exceeded
-
+Error: No data in harnessOutput – possible evaluation error or empty result
 
 --- TESTCASE 21 ---
 FAIL_TO_PASS passed: 0/2
-PASS_TO_PASS passed: 0/16
-
---- TESTCASE 22 ---
-Error: Max turns (10) exceeded
-
---- TESTCASE 23 ---
-Error: Max turns (10) exceeded
-
---- TESTCASE 24 ---
-Error: Max turns (10) exceeded
-
---- TESTCASE 25 ---
-Error: Max turns (10) exceeded
-
---- TESTCASE 26 ---
-Error: No data in harnessOutput – possible evaluation error or empty result
-
---- TESTCASE 27 ---
-Error: Max turns (10) exceeded
-
---- TESTCASE 28 ---
-Error: Max turns (10) exceeded
-
---- TESTCASE 29 ---
-Error: No data in harnessOutput – possible evaluation error or empty result
-
---- TESTCASE 30 ---
-Error: No data in harnessOutput – possible evaluation error or empty result
-
---- TESTCASE 20 ---
-No changes detected in the repository. Skipping evaluation.
-
---- TESTCASE 20 ---
-Error: name 'token_total' is not defined
-
---- TESTCASE 21 ---
-No changes detected in the repository. Skipping evaluation.
-
---- TESTCASE 21 ---
-Error: name 'token_total' is not defined
+PASS_TO_PASS passed: 14/16
 
 --- TESTCASE 22 ---
 Error: No data in harnessOutput – possible evaluation error or empty result
